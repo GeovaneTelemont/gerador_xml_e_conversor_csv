@@ -1,7 +1,7 @@
 import os
 import tempfile
 from flask import Flask
-from gerador.routes import  routes_bP # import do Blueprint
+from .routes import  routes_bP # import do Blueprint
 
 def create_app():
     app = Flask(__name__)

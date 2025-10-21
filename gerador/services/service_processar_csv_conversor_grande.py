@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
-from ..utils import update_progress, carregar_roteiros, processar_enderecos_otimizado
-from ..config import Config
+from gerador.utils import update_progress, carregar_roteiros, processar_enderecos_otimizado
+from gerador.config import Config
 import os
 
 

@@ -1,8 +1,17 @@
 import os
 import pandas as pd
 import numpy as np
-from .constants import CODIGOS_COMPLEMENTO, COLUNAS_OBRIGATORIAS, PROGRESS_LOCK, MESSAGE_QUEUE
+from gerador.constants import CODIGOS_COMPLEMENTO, COLUNAS_OBRIGATORIAS, PROGRESS_LOCK, MESSAGE_QUEUE
 
+
+def formatar_coordenada(coord):
+    """Converte coordenada de formato brasileiro para internacional"""
+    if pd.isna(coord):
+        return None
+    try:
+        return float(str(coord).replace(',', '.'))
+    except ValueError:
+        return None
 
 def update_progress(message, progress=None, current=None, total=None, status=None):
     """Atualiza os dados de progresso e envia para a fila"""
@@ -22,59 +31,117 @@ def update_progress(message, progress=None, current=None, total=None, status=Non
         # Envia cópia dos dados para a fila
         MESSAGE_QUEUE.put(progress_data.copy())
 
-def validar_colunas_csv(arquivo_path):
-    """Valida se o arquivo CSV contém todas as colunas obrigatórias"""
+def _normalize_cols(cols):
+    # Remove BOM, espaços externos e normaliza para uppercase
+    return [str(c).replace('\ufeff','').strip().upper() for c in cols]
+
+def validar_colunas_csv(arquivo_path, verbose=True):
+    """
+        Validador robusto que tenta vários encodings e separadores,
+        mostra o cabeçalho lido e quais colunas estão faltando/extras.
+        Retorna um dict com o melhor resultado e um log de todas as tentativas.
+    """
+    
+    encodings = ['utf-8-sig', 'utf-8', 'latin-1', 'cp1252', 'iso-8859-1']
+    separadores = ['|', ';', '\t', ',']
+    obrigatorias = [c.upper() for c in COLUNAS_OBRIGATORIAS]
+
+    attempts = []
+
+    # Ler a primeira linha bruta (para inspecionar)
     try:
-        # Tenta ler apenas o cabeçalho do CSV
-        with open(arquivo_path, 'r', encoding='latin-1') as f:
-            primeira_linha = f.readline().strip()
-        
-        # Verifica o separador (| ou ;)
-        if '|' in primeira_linha:
-            separador = '|'
-        elif ';' in primeira_linha:
-            separador = ';'
-        else:
-            separador = ','  # fallback
-        
-        # Lê apenas o cabeçalho
-        df_header = pd.read_csv(arquivo_path, encoding='latin-1', sep=separador, nrows=0)
-        colunas_encontradas = set(df_header.columns.str.strip().str.upper())
-        colunas_obrigatorias_set = set([coluna.upper() for coluna in COLUNAS_OBRIGATORIAS])
-        
-        # Verifica colunas faltantes
-        colunas_faltantes = colunas_obrigatorias_set - colunas_encontradas
-        
-        # Verifica se há colunas extras (opcional, apenas para informação)
-        colunas_extras = colunas_encontradas - colunas_obrigatorias_set
-        
-        return {
-            'valido': len(colunas_faltantes) == 0,
-            'colunas_faltantes': list(colunas_faltantes),
-            'colunas_extras': list(colunas_extras),
-            'total_colunas': len(df_header.columns),
-            'colunas_encontradas': list(colunas_encontradas)
-        }
-        
+        with open(arquivo_path, 'rb') as f:
+            raw_head_bytes = f.readline()
+        # tenta decodificar com algumas codificações para ver a primeira linha
+        head_samples = {}
+        for enc in encodings:
+            try:
+                head_samples[enc] = raw_head_bytes.decode(enc, errors='replace').strip()
+            except Exception:
+                head_samples[enc] = None
     except Exception as e:
         return {
             'valido': False,
-            'erro': str(e),
-            'colunas_faltantes': COLUNAS_OBRIGATORIAS,
-            'colunas_extras': [],
-            'total_colunas': 0,
-            'colunas_encontradas': []
+            'erro': f'Erro ao abrir arquivo: {e}',
+            'attempts': []
         }
 
+    # Tenta combinações de encoding x separador
+    for enc in encodings:
+        for sep in separadores:
+            try:
+                df_header = pd.read_csv(arquivo_path, encoding=enc, sep=sep, nrows=0)
+                cols = _normalize_cols(df_header.columns.tolist())
+                cols_set = set(cols)
+                faltantes = sorted(list(set(obrigatorias) - cols_set))
+                extras = sorted(list(cols_set - set(obrigatorias)))
+                ok = (len(faltantes) == 0)
 
-def formatar_coordenada(coord):
-    """Converte coordenada de formato brasileiro para internacional"""
-    if pd.isna(coord):
-        return None
-    try:
-        return float(str(coord).replace(',', '.'))
-    except ValueError:
-        return None
+                attempts.append({
+                    'encoding': enc,
+                    'separador': repr(sep),
+                    'header_preview': head_samples.get(enc),
+                    'num_cols': len(cols),
+                    'cols_sample': cols[:20],
+                    'colunas_encontradas': cols,
+                    'colunas_faltantes': faltantes,
+                    'colunas_extras': extras,
+                    'valido': ok
+                })
+
+                # Se válido, devolve imediatamente (mas ainda loga)
+                if ok:
+                    if verbose:
+                        print("✅ Validação OK com encoding:", enc, "separador:", repr(sep))
+                        print("Colunas encontradas (exemplo):", cols[:20])
+                        if faltantes:
+                            print("Colunas faltantes:", faltantes)
+                    return {
+                        'valido': True,
+                        'encoding': enc,
+                        'separador': sep,
+                        'colunas_encontradas': cols,
+                        'colunas_faltantes': faltantes,
+                        'colunas_extras': extras,
+                        'attempts': attempts
+                    }
+
+            except Exception as e:
+                # registra falha dessa tentativa
+                attempts.append({
+                    'encoding': enc,
+                    'separador': repr(sep),
+                    'erro': str(e),
+                    'valido': False
+                })
+                continue
+
+    # Nenhuma tentativa foi totalmente válida — retorna relatório detalhado
+    if verbose:
+        print("❌ Nenhuma combinação encontrou todas as colunas obrigatórias.")
+        for at in attempts:
+            print("----")
+            print("encoding:", at.get('encoding'), "sep:", at.get('separador'), "valido:", at.get('valido'))
+            if 'cols_sample' in at:
+                print("cols_sample:", at.get('cols_sample')[:20])
+            if 'colunas_faltantes' in at and at.get('colunas_faltantes'):
+                print("faltantes:", at.get('colunas_faltantes'))
+            if 'erro' in at:
+                print("erro:", at.get('erro'))
+
+    # escolher tentativa "melhor" (a que tem menos faltantes) para retorno
+    best = min(
+        (a for a in attempts if 'colunas_faltantes' in a),
+        key=lambda x: len(x.get('colunas_faltantes', [])),
+        default=None
+    )
+
+    return {
+        'valido': False,
+        'erro': 'Nenhuma combinação de encoding/separador satisfez as colunas obrigatórias.',
+        'best_attempt': best,
+        'attempts': attempts
+    }
 
 def obter_codigo_complemento(texto):
     """
@@ -413,6 +480,4 @@ def processar_enderecos_otimizado(df_enderecos, df_roteiro_aparecida, df_roteiro
     return df
 
 
-
-# ========== FUNÇÃO OTIMIZADA COM PROGRESSO ==========
 

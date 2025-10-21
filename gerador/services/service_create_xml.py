@@ -1,7 +1,7 @@
 import pandas as pd
 import xml.etree.ElementTree as ET
 from datetime import datetime
-from ..utils import formatar_coordenada, obter_codigo_complemento, extrair_numero_argumento
+from gerador.utils import formatar_coordenada, obter_codigo_complemento, extrair_numero_argumento
 
 def criar_xml_edificio_ccomplementos(dados_csv, numero_pasta, complemento_vazio):
     edificio = ET.Element('edificio')

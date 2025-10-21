@@ -146,36 +146,46 @@ def progress():
 
 @routes_bP.route('/validar-csv', methods=['POST'])
 def validar_csv():
-    """Rota para validar o arquivo CSV via AJAX"""
+    print("\n🟢 Iniciando rota /validar-csv", flush=True)
+
     if 'file' not in request.files:
+        print("❌ Nenhum arquivo em request.files", flush=True)
         return jsonify({'valido': False, 'erro': 'Nenhum arquivo enviado'})
     
     file = request.files['file']
+    print(f"📁 Recebido arquivo: {file.filename}", flush=True)
+
     if file.filename == '':
+        print("❌ Nome de arquivo vazio", flush=True)
         return jsonify({'valido': False, 'erro': 'Nenhum arquivo selecionado'})
     
     if file and file.filename.endswith('.csv'):
         try:
-            # Salva o arquivo temporariamente
             filename = secure_filename(file.filename)
             filepath = os.path.join(Config.UPLOAD_FOLDER, f"temp_{filename}")
+            print(f"💾 Salvando arquivo temporário em: {filepath}", flush=True)
             file.save(filepath)
             
-            # Valida as colunas
+            print("🔍 Iniciando validação de colunas...", flush=True)
             resultado_validacao = validar_colunas_csv(filepath)
             
-            # Limpa o arquivo temporário
+            print("✅ Resultado da validação:", resultado_validacao, flush=True)
+            
             if os.path.exists(filepath):
                 os.remove(filepath)
+                print("🧹 Arquivo temporário removido", flush=True)
             
             return jsonify(resultado_validacao)
-            
+        
         except Exception as e:
-            # Limpa o arquivo temporário em caso de erro
+            import traceback
+            traceback.print_exc()
             if os.path.exists(filepath):
                 os.remove(filepath)
+            print(f"❌ Erro na validação: {str(e)}", flush=True)
             return jsonify({'valido': False, 'erro': f'Erro na validação: {str(e)}'})
     
+    print("❌ Arquivo não é CSV", flush=True)
     return jsonify({'valido': False, 'erro': 'Arquivo inválido'})
 
 @routes_bP.route('/conversor-csv', methods=['GET', 'POST'])

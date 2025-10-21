@@ -1,7 +1,7 @@
 import os
 from datetime import datetime
-from ..utils import carregar_roteiros, processar_enderecos_otimizado
-from ..config import Config
+from gerador.utils import carregar_roteiros, processar_enderecos_otimizado
+from gerador.config import Config
 import pandas as pd
 
 def processar_csv_conversor(arquivo_path):

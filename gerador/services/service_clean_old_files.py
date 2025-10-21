@@ -1,5 +1,5 @@
 import time, os 
-from ..config import Config
+from gerador.config import Config
 
 
 def limpar_arquivos_antigos():

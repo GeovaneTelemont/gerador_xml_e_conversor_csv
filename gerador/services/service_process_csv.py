@@ -2,8 +2,8 @@ import os, shutil, zipfile
 import pandas as pd
 from datetime import datetime
 from .service_create_xml import criar_xml_edificio_ccomplementos
-from ..utils import obter_codigo_complemento, extrair_numero_argumento
-from ..config import Config
+from gerador.utils import obter_codigo_complemento, extrair_numero_argumento
+from gerador.config import Config
 
 def processar_csv(arquivo_path):
     global LOG_COMPLEMENTOS
