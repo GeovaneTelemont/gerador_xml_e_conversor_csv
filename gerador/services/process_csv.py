@@ -1,7 +1,7 @@
 import os, shutil, zipfile
 import pandas as pd
 from datetime import datetime
-from .service_create_xml import criar_xml_edificio_ccomplementos
+from .gerar_xml import GeradorXml
 from gerador.utils import obter_codigo_complemento, extrair_numero_argumento
 from gerador.config import Config
 
@@ -50,7 +50,7 @@ def processar_csv(arquivo_path):
         comp2 = linha['COMPLEMENTO2'] if 'COMPLEMENTO2' in linha else ''
         resultado = linha['RESULTADO'] if 'RESULTADO' in linha else ''
 
-        xml_content = criar_xml_edificio_ccomplementos(linha, i, coluna_complemento_2_vazia)
+        xml_content = GeradorXml(linha, i, coluna_complemento_2_vazia).gerar_xml()
 
         # validação dos complementos
         if comp1 == '' or pd.isna(comp1):

@@ -4,7 +4,7 @@ from gerador.utils import carregar_roteiros, processar_enderecos_otimizado
 from gerador.config import Config
 import pandas as pd
 
-def processar_csv_conversor(arquivo_path):
+def processar_conversor_csv(arquivo_path):
     """Processa o arquivo CSV para conversão"""
     try:
         print(f"📂 Carregando {arquivo_path}...")

@@ -1,7 +1,7 @@
 import os
 from flask import Flask
 from gerador import create_app
-from gerador.services.service_clean_old_files import limpar_arquivos_antigos
+from gerador.services.limpar_pasta_download import limpar_arquivos_antigos
 
 if __name__ == '__main__':
     app = Flask(

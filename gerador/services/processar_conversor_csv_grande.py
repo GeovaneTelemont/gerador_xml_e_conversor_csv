@@ -5,7 +5,7 @@ from gerador.config import Config
 import os
 
 
-def processar_csv_conversor_grande(arquivo_path):
+def processar_conversor_csv_grande(arquivo_path):
     """Processa o arquivo CSV para conversão - OTIMIZADO PARA ARQUIVOS GRANDES"""
     try:
         update_progress("📂 Iniciando carregamento do arquivo...", progress=5, status='processing')

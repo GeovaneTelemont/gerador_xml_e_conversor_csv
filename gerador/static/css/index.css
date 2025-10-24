@@ -1,0 +1,25 @@
+/* Estilos específicos para index.html */
+.feature-card {
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+}
+
+.feature-card:hover {
+    transform: translateY(-5px);
+    border-color: #0d6efd;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.csv-requirements ul {
+    columns: 2;
+    -webkit-columns: 2;
+    -moz-columns: 2;
+}
+
+@media (max-width: 768px) {
+    .csv-requirements ul {
+        columns: 1;
+        -webkit-columns: 1;
+        -moz-columns: 1;
+    }
+}
