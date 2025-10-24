@@ -7,7 +7,7 @@ document.addEventListener('DOMContentLoaded', function() {
             const bsAlert = new bootstrap.Alert(alert);
             bsAlert.close();
         });
-    }, 5000);
+    }, 20000);
 
     // Add loading state to forms
     const forms = document.querySelectorAll('form');

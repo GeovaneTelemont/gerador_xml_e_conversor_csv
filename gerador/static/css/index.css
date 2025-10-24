@@ -1,25 +1,70 @@
-/* Estilos específicos para index.html */
-.feature-card {
+/* Estilos para a validação de CSV */
+.validation-status {
+    font-size: 0.9rem;
+}
+
+.badge-column {
+    display: inline-block;
+    margin: 2px;
+    font-size: 0.75rem;
+}
+
+#validationResult {
     transition: all 0.3s ease;
-    border: 2px solid transparent;
 }
 
-.feature-card:hover {
-    transform: translateY(-5px);
-    border-color: #0d6efd;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
-.csv-requirements ul {
-    columns: 2;
-    -webkit-columns: 2;
-    -moz-columns: 2;
+.upload-box {
+    background: #f8f9fa;
+    padding: 2rem;
+    border-radius: 10px;
+    border: 2px dashed #dee2e6;
 }
 
-@media (max-width: 768px) {
-    .csv-requirements ul {
-        columns: 1;
-        -webkit-columns: 1;
-        -moz-columns: 1;
-    }
+.required-columns-badge {
+    font-size: 0.7rem;
+    margin: 1px;
+}
+
+/* Efeitos de hover nos cards */
+.card {
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+/* Botão customizado */
+.btn-custom {
+    background: linear-gradient(45deg, #007bff, #0056b3);
+    border: none;
+    color: white;
+    font-weight: 500;
+    padding: 0.75rem 2rem;
+}
+
+.btn-custom:hover:not(:disabled) {
+    background: linear-gradient(45deg, #0056b3, #004085);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+}
+
+/* Estilos para os badges das colunas */
+.badge {
+    font-size: 0.75rem;
+}
+
+/* Animações suaves */
+.alert {
+    transition: all 0.3s ease;
+}
+
+.spinner-border {
+    animation: spinner-border 0.75s linear infinite;
 }

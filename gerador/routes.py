@@ -14,50 +14,35 @@ routes_bP = Blueprint('main', __name__)
 @routes_bP.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Validação do arquivo
-        file_validator = FileValidator()
-        validation_result = file_validator.validate_upload(request.files.get('file'), allowed_extensions={'csv'})
-        
-        if not validation_result['is_valid']:
-            for error in validation_result['errors']:
-                flash(error, 'danger')
+        if 'file' not in request.files:
+            flash('Nenhum arquivo selecionado')
             return redirect(request.url)
-        
-        # Se houver avisos, mostra como warning
-        for warning in validation_result['warnings']:
-            flash(warning, 'warning')
         
         file = request.files['file']
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(Config.UPLOAD_FOLDER, filename)
-        file.save(filepath)
-        
-        try:
-            # Primeiro validar a estrutura do CSV
-            csv_validator = CSVValidator()
-            csv_validation = csv_validator.validate_conversor_structure(filepath)
-            
-            if not csv_validation['is_valid']:
-                flash(f'Erro na validação do CSV: {csv_validation["errors"][0]}', 'danger')
-                return redirect(request.url)
-            
-            # Processar de acordo com o tipo de conversão determinado
-            tipo_conversao = csv_validation['tipo_conversao']
-            flash(f'Arquivo validado com sucesso! Tipo de conversão: {tipo_conversao.replace("_", " ")}', 'success')
-            
-            zip_filename, total_registros, log = processar_csv(filepath, tipo_conversao)
-            flash(f'Processamento concluído! {total_registros} registros processados.', 'success')
-            
-            # ... resto do código ...
-            
-        except Exception as e:
-            flash(f'Erro no processamento: {str(e)}', 'danger')
+        if file.filename == '':
+            flash('Nenhum arquivo selecionado')
             return redirect(request.url)
         
-        finally:
-            # Limpar arquivo temporário
-            if os.path.exists(filepath):
-                os.remove(filepath)
+        if file and file.filename.endswith('.csv'):
+            filename = secure_filename(file.filename)
+            filepath = os.path.join(Config.UPLOAD_FOLDER, filename)
+            file.save(filepath)
+            
+            # USAR O MÉTODO 'validar'
+            validar_csv = CSVValidator()
+            sucesso, mensagem = validar_csv.validar(filepath)
+            
+            if sucesso:
+                flash(mensagem, 'success')
+                zip_filename, total_registros, log = processar_csv(filepath)
+                return render_template('resultado.html', 
+                                      complementos=LOG_COMPLEMENTOS,
+                                      log=log, 
+                                      total_registros=total_registros,
+                                      zip_filename=zip_filename)
+            else:
+                flash(mensagem, 'danger')
+                return render_template('index.html')
     
     return render_template('index.html')
 

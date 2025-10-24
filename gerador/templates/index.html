@@ -13,16 +13,65 @@
 {% endblock %}
 
 {% block content %}
+
 <div class="row mt-4">
     <div class="col-12">
         <div class="upload-box rounded-3">
-            <form method="POST" enctype="multipart/form-data">
+            <form id="uploadForm" method="POST" enctype="multipart/form-data">
                 <div class="mb-3">
                     <label for="file" class="form-label">Selecione o arquivo CSV:</label>
                     <input class="form-control" type="file" name="file" id="file" accept=".csv" required>
                 </div>
-                <button type="submit" class="btn btn-custom btn-lg">
-                    📤 Processar Arquivo
+                <!-- No seu index.html, logo após o formulário de upload -->
+                <div class="container mt-3">
+                    <div id="flash-messages">
+                        {% with messages = get_flashed_messages(with_categories=true) %}
+                            {% if messages %}
+                                {% for category, message in messages %}
+                                    <div class="alert alert-{{ category }} alert-dismissible fade show mt-3">
+                                        {{ message }}
+                                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                    </div>
+                                {% endfor %}
+                            {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+                <!-- Status da Validação -->
+                <div id="validationStatus" class="mb-3" style="display: none;">
+                    <div class="d-flex align-items-center validation-status">
+                        <div id="validationSpinner" class="spinner-border spinner-border-sm text-primary me-2" role="status" style="display: none;">
+                            <span class="visually-hidden">Validando...</span>
+                        </div>
+                        <span id="validationMessage"></span>
+                    </div>
+                </div>
+
+                <!-- Resultado da Validação -->
+                <div id="validationResult" class="mb-3" style="display: none;">
+                    <!-- Colunas Faltantes -->
+                    <div id="missingColumnsAlert" class="alert alert-danger" style="display: none;">
+                        <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Colunas Faltantes</h6>
+                        <div id="missingColumnsList" class="mb-2"></div>
+                        <small class="text-muted">O arquivo não pode ser processado até que todas as colunas obrigatórias estejam presentes.</small>
+                    </div>
+                    
+                    <!-- Colunas Extras -->
+                    <div id="extraColumnsAlert" class="alert alert-warning" style="display: none;">
+                        <h6 class="alert-heading"><i class="fas fa-info-circle me-2"></i>Colunas Extras</h6>
+                        <div id="extraColumnsList"></div>
+                        <small class="text-muted">Estas colunas não são necessárias para o processamento.</small>
+                    </div>
+                    
+                    <!-- Validação Bem-sucedida -->
+                    <div id="successAlert" class="alert alert-success" style="display: none;">
+                        <h6 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Validação Bem-sucedida</h6>
+                        <p class="mb-0">Todas as colunas obrigatórias estão presentes. Você pode prosseguir com o processamento.</p>
+                    </div>
+                </div>
+
+                <button type="submit" id="processButton" class="btn btn-custom btn-lg" disabled>
+                    <i class="fas fa-cog me-2"></i>Processar Arquivo
                 </button>
             </form>
         </div>
@@ -38,7 +87,7 @@
                 <i class="fas fa-file-download fa-3x text-success mb-3"></i>
                 <h5 class="card-title">📥 Modelo CSV</h5>
                 <p class="card-text">Baixe o modelo CSV para usar no gerador de XML</p>
-                <!-- CORREÇÃO: Usar o endpoint correto -->
+                
                 <a href="{{ url_for('main.download_modelo_csv') }}" class="btn btn-success">
                     <i class="fas fa-file-excel"></i> Baixar Modelo CSV
                 </a>
@@ -68,23 +117,18 @@
                 <h5>ℹ️ Informações do CSV</h5>
             </div>
             <div class="card-body">
-            <p><strong>Tem duas forma de gerar o XML:</strong></p>
+                <p><strong>Tem duas forma de gerar o XML:</strong></p>
                 <ul>
                     <li><strong>Com dois complementos:</strong> Preencher as colunas COMPLEMENTO e COMPLEMENTO2 e deixar a coluna COMPLEMENTO3 vazia</li>
                     <li><strong>Com três complementos:</strong> Preencher as colunas COMPLEMENTO, COMPLEMENTO2 e RESULTADO</li>
                 </ul>
-            <br>
-            <p><strong>O arquivo CSV deve conter as seguintes colunas:</strong></p>
-            <ul>
-                <li>COMPLEMENTO, COMPLEMENTO2, RESULTADO</li>
-                <li>LATITUDE, LONGITUDE, COD_ZONA</li>
-                <li>LOCALIDADE, LOGRADOURO, BAIRRO</li>
-                <li>MUNICIPIO, UF, COD_LOGRADOURO</li>
-                <li>ID_ENDERECO, ID_ROTEIRO, ID_LOCALIDADE</li>
-                <li>CEP, NUM_FACHADA, COD_SURVEY</li>
-                <li>QUANTIDADE_UMS, UCS_RESIDENCIAIS, UCS_COMERCIAIS</li>
-            </ul>
-            <p><strong>Separador:</strong> Ponto e vírgula (;)</p>
+                <br>
+                <p><strong>O arquivo CSV deve conter as seguintes colunas obrigatórias:</strong></p>
+                <div id="requiredColumnsList" class="mb-3">
+                    <!-- As colunas serão carregadas via JavaScript -->
+                </div>
+                <p><strong>Separador:</strong> Ponto e vírgula (;)</p>
+                <p><strong>Codificação:</strong> UTF-8 recomendada</p>
             </div>
         </div>
     </div>
