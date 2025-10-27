@@ -1,6 +1,5 @@
 # validators.py
 import pandas as pd
-import chardet
 from typing import Dict, List, Tuple, Any
 from gerador.constants import COLUNAS_OBRIGATORIAS  # Importar do constants
 from flask import flash

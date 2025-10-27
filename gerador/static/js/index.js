@@ -81,7 +81,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Validação do formulário
+    // Validação do formulário - MANTIDO ORIGINAL
     const form = document.getElementById('uploadForm');
     if (form) {
         form.addEventListener('submit', function(e) {
@@ -279,9 +279,6 @@ function showValidationResult(missingColumns, validColumns, extraColumns, totalC
         return;
     }
     
-    // SEMPRE habilitar o botão - a validação detalhada será feita no Flask
-    processButton.disabled = false;
-    
     // Criar ou obter o container de resultados
     let validationResult = document.getElementById('validationResult');
     if (!validationResult) {
@@ -302,66 +299,89 @@ function showValidationResult(missingColumns, validColumns, extraColumns, totalC
     validationResult.style.display = 'block';
     validationResult.innerHTML = ''; // Limpar conteúdo anterior
     
-    if (missingColumns.length > 0) {
-        // Verificar se há alguma coluna válida
-        if (validColumns.length > 0) {
-            // MOSTRAR COLUNAS FALTANTES - há colunas válidas (apenas informativo)
-            const missingColumnsText = missingColumns.join(', ');
-            
-            const warningAlert = `
-                <div class="alert alert-warning">
-                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Colunas Faltantes Detectadas</h6>
-                    <div class="mb-2">
-                        <strong>Colunas faltantes:</strong> ${missingColumnsText}
-                    </div>
-                    <div class="mt-2">
-                        ${missingColumns.map(col => `<span class="badge bg-warning text-dark me-1 mb-1">${col}</span>`).join('')}
-                    </div>
-                    <small class="text-muted">A validação detalhada será feita no servidor. Você pode prosseguir com o envio.</small>
+    // NOVA VALIDAÇÃO: Verificar se não há NENHUMA coluna válida
+    if (validColumns.length === 0) {
+        // ARQUIVO COMPLETAMENTE INVÁLIDO - nenhuma coluna obrigatória encontrada
+        const invalidAlert = `
+            <div class="alert alert-danger">
+                <h6 class="alert-heading"><i class="fas fa-times-circle me-2"></i>Arquivo Inválido</h6>
+                <p class="mb-2"><strong>Nenhuma coluna obrigatória foi encontrada no arquivo.</strong></p>
+                <p class="mb-2">O arquivo selecionado não contém nenhuma das colunas necessárias para o processamento.</p>
+                <div class="mt-2">
+                    <small class="text-muted">
+                        <i class="fas fa-lightbulb me-1"></i>
+                        Verifique se o arquivo CSV contém os cabeçalhos corretos e tente novamente.
+                    </small>
                 </div>
-            `;
-            
-            validationResult.innerHTML = warningAlert;
-            showValidationStatus(`⚠️ ${missingColumns.length} colunas faltantes detectadas`, false);
-            
-        } else {
-            // ARQUIVO INVÁLIDO - nenhuma coluna válida encontrada
-            const dangerAlert = `
-                <div class="alert alert-danger">
-                    <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Arquivo inválido</h6>
-                    <p class="mb-0">O arquivo não contém nenhuma coluna obrigatória válida.</p>
+            </div>
+        `;
+        
+        validationResult.innerHTML = invalidAlert;
+        showValidationStatus('❌ Arquivo inválido - nenhuma coluna obrigatória encontrada', false);
+        processButton.disabled = true;
+        
+    } else if (missingColumns.length > 0) {
+        // BLOQUEIO PARCIAL - algumas colunas faltando
+        const missingColumnsText = missingColumns.join(', ');
+        
+        const dangerAlert = `
+            <div class="alert alert-danger">
+                <h6 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Colunas Obrigatórias Faltantes</h6>
+                <div class="mb-2">
+                    <strong>Faltam ${missingColumns.length} colunas obrigatórias:</strong> ${missingColumnsText}
                 </div>
-            `;
-            
-            validationResult.innerHTML = dangerAlert;
-            showValidationStatus('❌ Arquivo inválido', false);
-            processButton.disabled = true;
-        }
+                <div class="mt-2">
+                    ${missingColumns.map(col => `<span class="badge bg-danger me-1 mb-1">${col}</span>`).join('')}
+                </div>
+                <small class="text-muted mt-2 d-block">
+                    <i class="fas fa-info-circle me-1"></i>
+                    O processamento está bloqueado até que todas as colunas obrigatórias estejam presentes.
+                </small>
+            </div>
+        `;
+        
+        validationResult.innerHTML = dangerAlert;
+        showValidationStatus(`❌ ${missingColumns.length} colunas obrigatórias faltantes`, false);
+        processButton.disabled = true;
         
     } else {
+        // TODAS AS COLUNAS OBRIGATÓRIAS PRESENTES - habilitar botão
+        processButton.disabled = false;
+        
         if (extraColumns.length > 0) {
-            // ALERT BOOTSTRAP DE SUCCESS - Tudo certo (ignora colunas extras)
+            // ALERT BOOTSTRAP DE SUCCESS com colunas extras
             const successAlert = `
                 <div class="alert alert-success">
-                    <h6 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Validação Básica Concluída</h6>
-                    <p class="mb-0">Todas as colunas obrigatórias estão presentes. A validação detalhada será feita no servidor.</p>
+                    <h6 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Validação Concluída com Sucesso</h6>
+                    <p class="mb-2">Todas as ${COLUNAS_OBRIGATORIAS.length} colunas obrigatórias estão presentes.</p>
+                    <div class="mt-2">
+                        <small><strong>Colunas extras detectadas (${extraColumns.length}):</strong> ${extraColumns.join(', ')}</small>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-check me-1"></i>
+                        Arquivo validado com sucesso. Você pode prosseguir com o processamento.
+                    </small>
                 </div>
             `;
             
             validationResult.innerHTML = successAlert;
-            showValidationStatus(`✅ Validação básica concluída - ${totalColumns} colunas detectadas`, false);
+            showValidationStatus(`✅ Validação concluída - ${totalColumns} colunas detectadas`, false);
             
         } else {
-            // ALERT BOOTSTRAP DE SUCCESS - Tudo certo
+            // ALERT BOOTSTRAP DE SUCCESS - arquivo perfeito
             const successAlert = `
                 <div class="alert alert-success">
-                    <h6 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Validação Básica Concluída</h6>
-                    <p class="mb-0">Todas as colunas obrigatórias estão presentes. A validação detalhada será feita no servidor.</p>
+                    <h6 class="alert-heading"><i class="fas fa-check-circle me-2"></i>Validação Concluída com Sucesso</h6>
+                    <p class="mb-0">Todas as ${COLUNAS_OBRIGATORIAS.length} colunas obrigatórias estão presentes.</p>
+                    <small class="text-muted mt-2 d-block">
+                        <i class="fas fa-check me-1"></i>
+                        Arquivo validado com sucesso. Você pode prosseguir com o processamento.
+                    </small>
                 </div>
             `;
             
             validationResult.innerHTML = successAlert;
-            showValidationStatus(`✅ Validação básica concluída - ${totalColumns} colunas detectadas`, false);
+            showValidationStatus(`✅ Validação concluída - ${totalColumns} colunas detectadas`, false);
         }
     }
 }
